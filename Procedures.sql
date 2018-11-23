@@ -1,4 +1,3 @@
-﻿
 /* USER */
 /* "As a registered/unregistered user, I should be able to ..." */
 /* 1. Search for original content by its type OR its category */
@@ -16,9 +15,9 @@ GO
  AS
  SELECT *
  FROM Contributor
- INNER JOIN UserProject
- ON Contributor.ID=UserProject.ID
- WHERE @fullname LIKE UserProject.first_name+' '+UserProject.middle_name+' '+UserProject.last_name
+ INNER JOIN [User]
+ ON Contributor.ID=[User].ID
+ WHERE @fullname LIKE [User].first_name+' '+[User].middle_name+' '+[User].last_name
 /*3.Allows a future user to create an account on the database while checking his/her type */
 GO
 CREATE PROCEDURE Register_User
@@ -40,9 +39,9 @@ CREATE PROCEDURE Register_User
 @payment_rate DECIMAL(10,2),
 @user_id INT OUTPUT
 AS
-insert into UserProject (email,passwordUser,first_name,middle_name,last_name,birth_date)
+insert into [User] (email,passwordUser,first_name,middle_name,last_name,birth_date)
 values(@email,@passwordUser,@first_name,@middle_name,@last_name,@birth_date)
-set @user_id=(select top 1 ID from UserProject order by ID desc)
+set @user_id=(select top 1 ID from [User] order by ID desc)
 if @usertype = 'Viewer'
 insert into Viewer(ID,working_place,working_place_type,working_place_description)
 values
@@ -137,17 +136,17 @@ create procedure User_login
 @user_id INT OUTPUT
 AS
 DECLARE @type varchar(50);
-IF exists(select ID from UserProject where @email=email and @password=passwordUser)
+IF exists(select ID from [User] where @email=email and @password=passwordUser)
    BEGIN
-   if exists (select * from userProject where deactivationStatus =1 and @email=email and @password=passwordUser)
+   if exists (select * from [User] where deactivationStatus =1 and @email=email and @password=passwordUser)
    BEGIN
    select @user_id = ID
-   FROM UserProject
+   FROM [User]
    WHERE email=@email AND passwordUser=@password;
    END
    ELSE
    BEGIN
-   IF exists (select * from userProject where DATEDIFF(DAY,deactivationDate,GETDATE())>14 and @email=email and @password=passwordUser)
+   IF exists (select * from [User] where DATEDIFF(DAY,deactivationDate,GETDATE())>14 and @email=email and @password=passwordUser)
    BEGIN
    set @user_id = -1;
    END
@@ -203,12 +202,12 @@ create procedure Show_Profile
   @working_hours int OUTPUT, 
   @payment_rate decimal(10,10)OUTPUT
   as
-  if @user_id in (select ID from UserProject)
+  if @user_id in (select ID from [User])
   BEGIN
   select @user_id = ID , @email=email , @password = passwordUser ,
   @firstname = first_name ,@middlename =middle_name ,  @lastname =last_name,
   @birth_date = birth_date 
-  from UserProject
+  from [User]
   where  @user_id =ID;
   SELECT @working_place_name= working_place, @working_place_type =working_place_type,
   @wokring_place_description=working_place_description
@@ -242,9 +241,9 @@ CREATE PROCEDURE Edit_Profile
 @working_hours int,
 @payment_rate decimal(10,10)
 AS
-if @user_id in (select ID from UserProject)
+if @user_id in (select ID from [User])
 BEGIN
-update UserProject
+update [User]
 SET email =@email , passwordUser=@password,
 first_name =@firstname,middle_name = @middlename,
 last_name=@lastname,birth_date=@birth_date
@@ -265,7 +264,7 @@ GO
 /*4.Allows user to deactivate his/her account*/
 create procedure Deactivate_Profile @user_id INT
 AS
-UPDATE UserProject
+UPDATE [User]
 SET deactivationStatus = 0, deactivationDate = CURRENT_TIMESTAMP
 where ID = @user_id;
 GO
@@ -274,12 +273,12 @@ create PROCEDURE Show_Event @event_id INT
 AS
 if exists(select e.id,u.first_name,u.middle_name,u.last_name,e.descriptionEvent,e.locationEvent,
 e.city,e.timeEvent,e.entertainer,e.notification_object_id,e.viewer_id
-FROM EventProject e, Viewer v , UserProject u
+FROM [Event] e, Viewer v , [User] u
 WHERE v.ID = viewer_id and e.id=@event_id and u.ID=v.ID)
 BEGIN
 select e.id,u.first_name,u.middle_name,u.last_name,e.descriptionEvent,e.locationEvent,
 e.city,e.timeEvent,e.entertainer,e.notification_object_id,e.viewer_id
-FROM EventProject e, Viewer v ,UserProject u
+FROM [Event] e, Viewer v ,[User] u
 WHERE v.ID = viewer_id and e.id=@event_id and u.ID=v.ID
 END
 ELSE
@@ -288,7 +287,7 @@ if @event_id is null
 BEGIN
 SELECT e.id,u.first_name,u.middle_name,u.last_name,e.descriptionEvent,e.locationEvent,
 e.city,e.timeEvent,e.entertainer,e.notification_object_id,e.viewer_id
-FROM EventProject e , Viewer v ,UserProject u
+FROM [Event] e , Viewer v ,[User] u
 WHERE v.ID = viewer_id and u.ID=v.ID and e.timeEvent>= current_timestamp
 END
 END
@@ -296,11 +295,11 @@ END
 GO
 create procedure Show_Notification @user_id INT
 AS
-if exists(select u.ID from UserProject u,Staff s where u.ID=s.ID and u.ID = @user_id )
-   or exists(select u.ID from UserProject u,Contributor c where u.ID=c.ID and u.ID = @user_id)
+if exists(select u.ID from [User] u,Staff s where u.ID=s.ID and u.ID = @user_id )
+   or exists(select u.ID from [User] u,Contributor c where u.ID=c.ID and u.ID = @user_id)
 BEGIN
    DECLARE @npid int;
-   if exists(select u.ID from UserProject u,Staff s where u.ID=s.ID and u.ID = @user_id )
+   if exists(select u.ID from [User] u,Staff s where u.ID=s.ID and u.ID = @user_id )
    BEGIN
        select @npid = n.ID
        FROM staff s,Notified_Person n
@@ -325,14 +324,14 @@ BEGIN
 if @content_id is not NULL
 BEGIN
 SELECT ct.link, ct.uploaded_at, ct.contributor_id, ct.category_type, ct.subcategory_name , ct.typeContent , u.first_name,u.middle_name,u.last_name,u.ID
-from New_Request r , New_Content n , Contributor c ,content ct , UserProject u
+from New_Request r , New_Content n , Contributor c ,content ct , [User] u
 WHERE n.ID = @content_id and n.new_request_id =r.id  and r.viewer_id=@viewer_id
    and ct.contributor_id = c.ID and u.ID = c.ID and ct.ID = n.ID;
 END
 ELSE
 BEGIN
 select ct.link, ct.uploaded_at, ct.contributor_id, ct.category_type, ct.subcategory_name , ct.typeContent , u.first_name,u.middle_name,u.last_name,u.ID
-from New_Request r ,New_Content n , Contributor c ,content ct , UserProject u
+from New_Request r ,New_Content n , Contributor c ,content ct , [User] u
 WHERE n.new_request_id =r.id and r.viewer_id=@viewer_id
    and ct.contributor_id = c.ID and u.ID = c.ID and ct.ID = n.ID;
 END
@@ -353,17 +352,17 @@ CREATE PROC Viewer_Create_Event @city VARCHAR(50), @event_date_time DATETIME, @d
  FROM Notification_Object
  ORDER BY ID DESC
  )
- INSERT INTO EventProject (city,timeEvent,descriptionEvent,entertainer,viewer_id,locationEvent,notification_object_id)
+ INSERT INTO [Event] (city,timeEvent,descriptionEvent,entertainer,viewer_id,locationEvent,notification_object_id)
  VALUES (@city, @event_date_time,@description,@entertainer,@viewer_id,@location,@notID)
  
  DECLARE @i INT
  SET @i=1
  DECLARE @max INT
- SET @max=(SELECT TOP 1 ID FROM UserProject ORDER BY ID DESC)
+ SET @max=(SELECT TOP 1 ID FROM [User] ORDER BY ID DESC)
  WHILE @i<=@max
  BEGIN
  DECLARE @newI INT
- SET @newI=(SELECT ID FROM UserProject WHERE ID=@i)
+ SET @newI=(SELECT ID FROM [User] WHERE ID=@i)
  IF @newI IN (SELECT ID FROM Contributor)
  BEGIN
  INSERT INTO Announcement(sent_at,notified_person_id,notification_object_id)
@@ -380,7 +379,7 @@ CREATE PROC Viewer_Create_Event @city VARCHAR(50), @event_date_time DATETIME, @d
 
  SET @event_id=(
  SELECT TOP 1 id
- FROM EventProject
+ FROM [Event]
  ORDER BY ID DESC
  )
  END
@@ -403,9 +402,9 @@ CREATE PROC Viewer_Create_Event @city VARCHAR(50), @event_date_time DATETIME, @d
  DECLARE @desc VARCHAR(1000)
  DECLARE @loc VARCHAR(100)
  DECLARE @viewer_id INT
- SET @desc=(SELECT descriptionEvent FROM EventProject WHERE id=@event_id)
- SET @loc=(SELECT locationEvent FROM EventProject WHERE id=@event_id)
- SET @viewer_id=(SELECT viewer_id FROM EventProject WHERE id=@event_id)
+ SET @desc=(SELECT descriptionEvent FROM [Event] WHERE id=@event_id)
+ SET @loc=(SELECT locationEvent FROM [Event] WHERE id=@event_id)
+ SET @viewer_id=(SELECT viewer_id FROM [Event] WHERE id=@event_id)
  INSERT INTO Advertisement VALUES(@desc,@loc,@event_id,@viewer_id)
  /* 4. Apply for an existing request to buy a specified original content(s). ONLY allowed original content to be bought has a rating of 4 or 5 stars*/
 GO
@@ -428,7 +427,7 @@ GO
  INSERT INTO Notification_Object DEFAULT VALUES
  DECLARE @notifId INT
  SET @notifId=(SELECT TOP 1 ID FROM Notification_Object ORDER BY ID DESC)
- INSERT INTO New_Request (specified,information,viewier_id,notif_obj_id,contributor_id)
+ INSERT INTO New_Request (specified,information,viewer_id,notif_obj_id,contributor_id)
 VALUES(1,@information,@viewer_id,@notifId,@contributor_id)
  INSERT INTO Announcement (sent_at,notified_person_id,notification_object_id)
  VALUES(CURRENT_TIMESTAMP,(SELECT notified_id FROM Contributor WHERE ID=@contributor_id),@notifId)
@@ -442,16 +441,16 @@ VALUES(1,@information,@viewer_id,@notifId,@contributor_id)
  INSERT INTO Notification_Object DEFAULT VALUES
  DECLARE @notifId2 INT
  SET @notifId2 = (SELECT TOP 1 ID FROM Notification_Object ORDER BY ID DESC)
- INSERT INTO New_Request (specified,information,viewier_id,notif_obj_id) 
+ INSERT INTO New_Request (specified,information,viewer_id,notif_obj_id) 
 VALUES(0,@information,@viewer_id,@notifId2)
  DECLARE @i INT
  SET @i=1
  DECLARE @max INT
- SET @max=(SELECT TOP 1 ID FROM UserProject ORDER BY ID DESC)
+ SET @max=(SELECT TOP 1 ID FROM [User] ORDER BY ID DESC)
  WHILE @i<=@max
  BEGIN
  DECLARE @newI INT
- SET @newI=(SELECT ID FROM UserProject WHERE ID=@i)
+ SET @newI=(SELECT ID FROM [User] WHERE ID=@i)
  IF @newI IN (SELECT ID FROM Contributor)
  BEGIN
  INSERT INTO Announcement(sent_at,notified_person_id,notification_object_id)
@@ -534,20 +533,20 @@ GO
  FROM Notification_Object
  ORDER BY ID DESC
  )
- INSERT INTO EventProject(descriptionEvent,locationEvent,notification_object_id,viewer_id)
+ INSERT INTO [Event](descriptionEvent,locationEvent,notification_object_id,viewer_id)
  VALUES(@description,@location,@notID,@viewer_id)
- SET @event_id=(SELECT TOP 1 id FROM EventProject ORDER BY id DESC)
+ SET @event_id=(SELECT TOP 1 id FROM [Event] ORDER BY id DESC)
 INSERT INTO Advertisement (viewer_id,descriptionAd,locationAd,event_id)
 VALUES (@viewer_id,@description,@location,@event_id)
 
 DECLARE @i INT
  SET @i=1
  DECLARE @max INT
- SET @max=(SELECT TOP 1 ID FROM UserProject ORDER BY ID DESC)
+ SET @max=(SELECT TOP 1 ID FROM [User] ORDER BY ID DESC)
  WHILE @i<=@max
  BEGIN
  DECLARE @newI INT
- SET @newI=(SELECT ID FROM UserProject WHERE ID=@i)
+ SET @newI=(SELECT ID FROM [User] WHERE ID=@i)
  IF @newI IN (SELECT ID FROM Contributor)
  BEGIN
  INSERT INTO Announcement(sent_at,notified_person_id,notification_object_id)
@@ -580,9 +579,9 @@ DECLARE @event_id INT
 IF @ad_id IN (SELECT id FROM Advertisement)
 BEGIN
 SET @event_id=(SELECT event_id FROM Advertisement WHERE id=@ad_id)
-SET @notID=(SELECT notification_object_id FROM EventProject WHERE id=@event_id)
+SET @notID=(SELECT notification_object_id FROM [Event] WHERE id=@event_id)
 DELETE FROM Announcement WHERE notification_object_id=@notID
-/*DELETE FROM EventProject WHERE id=@event_id*/
+/*DELETE FROM [Event] WHERE id=@event_id*/
 DELETE FROM Advertisement WHERE id=@ad_id
 PRINT @event_id
 PRINT @notID
@@ -593,7 +592,7 @@ CREATE PROCEDURE Send_Message @msg_text VARCHAR(8000), @viewer_id INT, @contribu
 AS
 IF @viewer_id IN (SELECT ID FROM Viewer) AND @contributor_id IN (SELECT ID FROM Contributor)
 BEGIN
-INSERT INTO MessageProject (textProject,viewer_id,contributor_id,sender_type,sent_at,read_status)
+INSERT INTO [Message] (textProject,viewer_id,contributor_id,sender_type,sent_at,read_status)
 VALUES (@msg_text,@viewer_id,@contributor_id,@sender_type,@sent_at,0)
 END
 /* 15. Show all messages to/from a contributor*/
@@ -603,7 +602,7 @@ AS
 IF @contributor_id IN (SELECT ID FRom Contributor)
 BEGIN
 SELECT *
-FROM MessageProject
+FROM [Message]
 WHERE contributor_id=@contributor_id
 END
 
