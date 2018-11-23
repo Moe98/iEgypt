@@ -1,4 +1,3 @@
-﻿
 /* USER */
 /* "As a registered/unregistered user, I should be able to ..." */
 /* 1. Search for original content by its type OR its category */
@@ -16,7 +15,7 @@ DECLARE @out1 INT;
 EXEC Register_User 'Contributor' , 'a@gmail.com','1234','Fadi','Essam','Saad','1997/3/27',null,null,null,'art','link123',9,'2000-12-12',8,10.2,@out1;
 print @out1;
 GO
-select * FROM UserProject
+select * FROM [User]
 GO
 declare @out3 int;
 EXEC Register_User 'Content Manager' , 'b@gmail.com','1234','Fadi','Essam','Saad','1997/3/27',null,null,null,null,null,9,'2000-12-12',8,10.2,@out3;
@@ -37,7 +36,7 @@ go
 declare @out4 int;
 exec User_login 'a@gmail.com','1234',@out4 out;
 print @out4;
-select * from UserProject
+select * from [User]
 GO
 /*2.Shows all info about a user’s profile*/
 declare @email varchar(50) ;
@@ -80,7 +79,7 @@ GO
 exec Edit_Profile 1 , 'new@gmail.com','123','fadi','essam','saad','1997-3-27',null,null,null,null,null,null,null,null,null
 /*4.Allows user to deactivate his/her account*/
 exec Deactivate_Profile 2;
-select * from UserProject where ID =2
+select * from [User] where ID =2
 /*5.Shows the event with the specific id @event_id or all coming events if  @event_id=null*/
 exec Show_Event 1;
 exec Show_event 100;
@@ -278,10 +277,6 @@ EXECUTE Most_Requested_Content
 EXECUTE Workingplace_Category_Relation
 /* 8-  Delete a comment on the website */
 /* ALEADY EXECUTED ABOVE */
-/* 9- Delete Original Content */
-EXEC Delete_Original_Content 1
-/* 10- Delete New Content */
-EXEC Delete_New_Content 4
 /* 11- Assign a contributor to a request */
 EXECUTE Assign_Contributor_Request 6,11
 /* 12- Show a list of contributors to be able to assign one of them to a request */
