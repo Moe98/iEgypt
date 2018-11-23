@@ -278,6 +278,10 @@ EXECUTE Most_Requested_Content
 EXECUTE Workingplace_Category_Relation
 /* 8-  Delete a comment on the website */
 /* ALEADY EXECUTED ABOVE */
+/* 9- Delete Original Content */
+EXEC Delete_Original_Content 1
+/* 10- Delete New Content */
+EXEC Delete_New_Content 4
 /* 11- Assign a contributor to a request */
 EXECUTE Assign_Contributor_Request 6,11
 /* 12- Show a list of contributors to be able to assign one of them to a request */
