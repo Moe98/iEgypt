@@ -1,4 +1,4 @@
-﻿/* INSERTIONS */
+/* INSERTIONS */
 /*CATEGORY PART*/
 INSERT INTO Category VALUES
 ('1','its 1'), ('2','its 2'), ('3','its 3')
@@ -11,7 +11,7 @@ SELECT * FROM Sub_Category
 /*CATEGORY PART*/
 
 /*USER*/
-INSERT INTO UserProject (email,deactivationStatus, first_name,middle_name,last_name,birth_date,passwordUser)
+INSERT INTO [User] (email,deactivationStatus, first_name,middle_name,last_name,birth_date,passwordUser)
 VALUES
 ('a@gmail.com', 1, 'a','m','viewer1','1/1/1980','12345'), 
 ('b@gmail.com', 1, 'b','m','viewer2','1/1/1980','12345'),
@@ -27,7 +27,7 @@ VALUES
 ('l@gmail.com', 1, 'l','m','ContMan2','1/1/1980','12345'),
 ('m@gmail.com', 1, 'm','m','ContMan3','1/1/1980','12345')
 
-SELECT * FROM UserProject
+SELECT * FROM [User]
 INSERT INTO Viewer(ID,working_place,working_place_type,working_place_description)
 VALUES
 (1,'wp1','t1','d1'),
@@ -115,10 +115,10 @@ INSERT INTO Notification_Object DEFAULT VALUES
 INSERT INTO Notification_Object DEFAULT VALUES
 SELECT * FROM Notification_Object
 
-INSERT INTO EventProject
+INSERT INTO [Event]
 VALUES
 ('event 1','cfc','cairo','1/1/2019','mark',1,1), ('event 2','guc','cairo','4/3/2019','carol',2,2)
-SELECT * FROM EventProject
+SELECT * FROM [Event]
 
 
 
@@ -152,10 +152,6 @@ VALUES
 (0,0,'9th request',1,12),
 (0,0,'10th request',2,13),
 (0,0,'11th request',3,3)
-
-
-
-
 
 
 
