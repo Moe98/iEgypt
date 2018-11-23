@@ -122,7 +122,7 @@ SELECT * FROM [Event]
 
 
 
-INSERT INTO Advertisement (descriptionAd,locationAd,event_id,viewer_id) 
+INSERT INTO Advertisement (description,location,event_id,viewer_id) 
 VALUES 
 ('CFC AD','CFC',1,1),('GUC AD','GUC',2,2)
 
