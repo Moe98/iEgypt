@@ -1,3 +1,4 @@
+USE iEgypt
 /* USER */
 /* "As a registered/unregistered user, I should be able to ..." */
 /* 1. Search for original content by its type OR its category */
@@ -770,12 +771,17 @@ IF @content_id IN (
 SELECT ID
 FROM New_Content)
 BEGIN
-DELETE
-FROM New_Content
-where @content_id=ID
-DELETE 
-FROM Content
-where @content_id=ID
+ DECLARE @reqID INT 
+ set @reqID=(Select new_request_id From New_Content)
+ DELETE 
+ FROM New_Content
+ where ID=@content_id
+ DELETE 
+ FROM Content
+ WHERE ID=@content_id
+ Delete 
+ FROM New_Request
+ Where id=@reqID
 END
 IF @content_id IN (
 SELECT ID
@@ -910,13 +916,20 @@ END
 GO
 CREATE PROCEDURE Staﬀ_Create_Subcategory @category_name VARCHAR(50), @subcategory_name VARCHAR(50)
 AS
+IF @category_name IN (SELECT category_type FROM Category)
+BEGIN
+IF @subcategory_name NOT IN (SELECT name FROM Categeory WHERE category_type = @category_name)
+BEGIN
 INSERT INTO Sub_Category(category_type,name)
 VALUES (@category_name,@subcategory_name)
+END
+END
 
 /* 5- Create a new type */
 GO
 CREATE PROCEDURE Staff_Create_Type @type_name VARCHAR(50)
 AS
+IF @type_name NOT IN (SELECT type FROM Content_type)
 INSERT INTO Content_type (​type​) 
 VALUES(@type_name)
 
@@ -970,12 +983,17 @@ GO
 GO
  CREATE PROCEDURE Delete_New_Content @content_id INT
  AS
+ DECLARE @reqID INT 
+ set @reqID=(Select new_request_id From New_Content)
  DELETE 
  FROM New_Content
  where ID=@content_id
  DELETE 
  FROM Content
  WHERE ID=@content_id
+ Delete 
+ FROM New_Request
+ Where id=@reqID
 
 /*11. Assign_Contributor_Request*/
 GO 
@@ -1030,16 +1048,28 @@ WHERE @contributor_id = c.contributor_id)
 RETURN @difference
 END
 
+GO
+CREATE FUNCTION numberOfRequests (@contributor_id INT)
+RETURNS INT
+AS
+BEGIN
+DECLARE @requests INT
+SET @requests = (SELECT COUNT(*) FROM New_Request WHERE New_Request.contributor_id=@contributor_id)
+RETURN @requests
+END
+
 GO 
 CREATE PROCEDURE Show_Possible_Contributors
 AS
-SELECT c.contributor_id , COUNT(c.contributor_id) AS 'Number of handled requests'
+SELECT c.contributor_id , COUNT(c.contributor_id) AS 'Number of requests'
 FROM Contributor INNER JOIN New_Request nr ON Contributor.ID = nr.contributor_id
 INNER JOIN New_Content nc ON nr.id = nc.new_request_id
 INNER JOIN Content c ON nc.ID = c.ID
 GROUP BY c.contributor_id
-ORDER BY dbo.AvgRespondRate(c.contributor_id) asc , COUNT(c.contributor_id) desc
-
+HAVING (dbo.numberOfRequests(c.contributor_id))-COUNT(c.contributor_id)<3
+ORDER BY dbo.AvgRespondRate(c.contributor_id) ASC, COUNT(c.contributor_id) DESC
 
 /* STAFF MEMBER */ 
+
+
 
