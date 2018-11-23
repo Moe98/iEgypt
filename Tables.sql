@@ -1,5 +1,5 @@
-﻿CREATE DATABASE iEgypt
-CREATE TABLE UserProject(
+CREATE DATABASE iEgypt
+CREATE TABLE [User](
 ID INT PRIMARY KEY IDENTITY,
 email VARCHAR(50),
 deactivationStatus BIT DEFAULT 1,
@@ -16,7 +16,7 @@ UNIQUE (email)
 CREATE TABLE Viewer(
 ID INT,
 PRIMARY KEY(ID),
-FOREIGN KEY(ID) REFERENCES UserProject ON DELETE CASCADE ON UPDATE CASCADE,
+FOREIGN KEY(ID) REFERENCES [User] ON DELETE CASCADE ON UPDATE CASCADE,
 working_place VARCHAR(50),
 working_place_type VARCHAR(50),
 working_place_description VARCHAR(50)
@@ -33,7 +33,7 @@ notified_id INT,
 PRIMARY KEY(ID),
 specialization VARCHAR(50),
 portfolio_link VARCHAR(50),
-FOREIGN KEY(ID) REFERENCES UserProject ON DELETE CASCADE ON UPDATE CASCADE,
+FOREIGN KEY(ID) REFERENCES [User] ON DELETE CASCADE ON UPDATE CASCADE,
 FOREIGN KEY(notified_id) REFERENCES Notified_Person ON DELETE NO ACTION ON UPDATE NO ACTION
 )
 
@@ -45,7 +45,7 @@ working_hours DECIMAL(20,5),
 payment_rate DECIMAL(20,5),
 total_salary AS (payment_rate*working_hours),
 PRIMARY KEY(ID),
-FOREIGN KEY(ID) REFERENCES UserProject ON DELETE CASCADE ON UPDATE CASCADE,
+FOREIGN KEY(ID) REFERENCES [User] ON DELETE CASCADE ON UPDATE CASCADE,
 FOREIGN KEY(notified_id) REFERENCES Notified_Person ON DELETE CASCADE ON UPDATE CASCADE
 )
 
@@ -56,7 +56,7 @@ PRIMARY KEY(ID),
 FOREIGN KEY(ID) REFERENCES Staff ON DELETE CASCADE ON UPDATE CASCADE
 )
 
-CREATE TABLE MessageProject(
+CREATE TABLE [Message](
 sent_at DATETIME,
 contributor_id INT,
 viewer_id INT,
@@ -191,7 +191,7 @@ FOREIGN KEY(Viewer_id) REFERENCES Viewer ON DELETE NO ACTION ON UPDATE NO ACTION
 FOREIGN KEY(original_content_id) REFERENCES Original_Content ON DELETE NO ACTION ON UPDATE NO ACTION
 )
 
-CREATE TABLE EventProject(
+CREATE TABLE [Event](
 id INT PRIMARY KEY IDENTITY,
 descriptionEvent VARCHAR(1000),
 locationEvent VARCHAR(1000),
@@ -208,14 +208,14 @@ CREATE TABLE Event_Photos_Link(
 event_id INT,
 link VARCHAR(100),
 PRIMARY KEY(event_id,link),
-FOREIGN KEY(event_id) REFERENCES EventProject ON DELETE NO ACTION ON UPDATE NO ACTION
+FOREIGN KEY(event_id) REFERENCES [Event] ON DELETE NO ACTION ON UPDATE NO ACTION
 )
 
 CREATE TABLE Event_Videos_Link(
 event_id INT,
 link VARCHAR(100),
 PRIMARY KEY(event_id,link),
-FOREIGN KEY(event_id) REFERENCES EventProject ON DELETE NO ACTION ON UPDATE NO ACTION
+FOREIGN KEY(event_id) REFERENCES [Event] ON DELETE NO ACTION ON UPDATE NO ACTION
 )
 
 CREATE TABLE Advertisement(
@@ -225,7 +225,7 @@ locationAd VARCHAR(1000),
 event_id INT,
 viewer_id INT,
 FOREIGN KEY(viewer_id) REFERENCES Viewer ON DELETE NO ACTION ON UPDATE NO ACTION,
-FOREIGN KEY(event_id) REFERENCES EventProject ON DELETE NO ACTION ON UPDATE NO ACTION
+FOREIGN KEY(event_id) REFERENCES [Event] ON DELETE NO ACTION ON UPDATE NO ACTION
 )
 
 CREATE TABLE Ads_Video_Link(
@@ -235,7 +235,7 @@ PRIMARY KEY(advertisement_id,link),
 FOREIGN KEY(advertisement_id) REFERENCES Advertisement ON DELETE NO ACTION ON UPDATE NO ACTION
 )
 
-CREATE TABLE Ads_Photo_Link(
+CREATE TABLE Ads_Photos_Link(
 advertisement_id INT,
 link VARCHAR(100),
 PRIMARY KEY(advertisement_id,link),
@@ -257,3 +257,92 @@ FOREIGN KEY(notification_object_id) REFERENCES Notification_Object ON DELETE NO 
 
 
 
+
+
+/*
+DROP Table Announcement;
+DROP Table Ads_Photos_Link;
+DROP Table Ads_Video_Link;
+DROP Table Advertisement;
+DROP Table Event_Videos_link;
+DROP Table Event_Photos_link;
+DROP Table [Event];
+DROP Table Rate;
+DROP Table Comment;
+DROP Table New_Content;
+DROP Table New_Request;
+DROP Table Existing_Request;
+DROP Table Original_Content;
+DROP Table Content;
+DROP Table Notification_Object;
+DROP Table Sub_Category;
+DROP Table Category;
+DROP Table [Message];
+DROP Table Reviewer;
+DROP Table Content_manager;
+DROP Table Content_type;
+DROP Table Staff;
+DROP Table Contributor;
+DROP Table Viewer;
+DROP Table Notified_Person;
+DROP Table [User];
+DROP DATABASE iEgypt_19
+*/
+
+/*
+
+
+DROP PROCEDURE Original_Content_Search;
+DROP PROCEDURE Contributor_Search;
+DROP PROCEDURE Register_User;
+DROP PROCEDURE Check_Type;
+DROP PROCEDURE Order_Contributor;
+DROP PROCEDURE Show_Original_Content;
+
+DROP PROCEDURE User_login;
+DROP PROCEDURE Show_Profile;
+DROP PROCEDURE Edit_Profile;
+DROP PROCEDURE Deactivate_Profile;
+DROP PROCEDURE Show_Event;
+DROP PROCEDURE Show_Notification;
+DROP PROCEDURE Show_New_Content;
+
+DROP PROCEDURE Viewer_Create_Event;
+DROP PROCEDURE Viewer_Upload_Event_Photo;
+DROP PROCEDURE Viewer_Upload_Event_Video;
+DROP PROCEDURE Viewer_Create_Ad_From_Event;
+DROP PROCEDURE Apply_Existing_Request;
+DROP PROCEDURE Apply_New_Request;
+DROP PROCEDURE Delete_New_Request;
+DROP PROCEDURE Rating_Original_Content;
+DROP PROCEDURE Write_Comment;
+DROP PROCEDURE Edit_Comment;
+DROP PROCEDURE Delete_Comment;
+DROP PROCEDURE Create_Ads;
+DROP PROCEDURE Edit_Ad;
+DROP PROCEDURE Delete_Ads;
+DROP PROCEDURE Send_Message;
+DROP PROCEDURE Show_Message;
+DROP PROCEDURE Highest_Rating_Original_content;
+DROP PROCEDURE Assign_New_Request;
+
+DROP PROCEDURE Receive_New_Requests;
+DROP PROCEDURE Respond_New_Request;
+DROP PROCEDURE Upload_Original_Content;
+DROP PROCEDURE Upload_New_Content;
+DROP PROCEDURE Delete_Content;
+DROP PROCEDURE Receive_New_Request;
+
+DROP PROCEDURE reviewer_filter_content;
+DROP PROCEDURE content_manager_filter_content;
+DROP PROCEDURE Staff_Create_Category;
+DROP PROCEDURE Staff_Create_Subcategory;
+DROP PROCEDURE Staff_Create_Type;
+DROP PROCEDURE Most_Requested_Content;
+DROP PROCEDURE Workingplace_Category_Relation;
+DROP PROCEDURE Delete_Original_Content;
+DROP PROCEDURE Delete_New_Content;
+DROP PROCEDURE Assign_Contributor_Request;
+DROP PROCEDURE Show_Possible_Contributors;
+
+*/
