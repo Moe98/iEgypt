@@ -175,7 +175,7 @@ ID INT,
 typeConManager VARCHAR(50),
 PRIMARY KEY(ID),
 FOREIGN KEY (ID) REFERENCES Staff ON DELETE CASCADE ON UPDATE CASCADE,
-FOREIGN KEY (typeConManager) REFERENCES Content_type ON DELETE CASCADE ON UPDATE CASCADE
+FOREIGN KEY (typeConManager) REFERENCES Content_type ON DELETE SET NULL ON UPDATE CASCADE
 )
 
 CREATE TABLE Notification_Object(
@@ -219,7 +219,7 @@ FROM Rate
 WHERE @id=Rate.original_content_id
 
 GO
-CREATE FUNCTION avgRate (@id int)
+CREATE FUNCTION average (@id int)
 RETURNS DECIMAL
 AS
 BEGIN
@@ -366,8 +366,9 @@ GO
  ON Contributor.ID=UserProject.ID
  WHERE @fullname LIKE UserProject.first_name+' '+UserProject.middle_name+' '+UserProject.last_name
  GO
-
-
+ SELECT * FROM UserProject
+ EXEC Contributor_Search 'd m contributor1'
+ GO
  CREATE PROCEDURE Order_Contributor
  AS
  SELECT *
@@ -474,6 +475,34 @@ PRINT @years_experience;
 print @hire_date;
 print @working_hours ;
 print @payment_rate ;
+
+GO
+create PROCEDURE Show_Event @event_id INT
+AS
+if exists(select e.id,u.first_name,u.middle_name,u.last_name,e.descriptionEvent,e.locationEvent,
+e.city,e.timeEvent,e.entertainer,e.notification_object_id,e.viewer_id
+FROM EventProject e, Viewer v , UserProject u
+WHERE v.ID = viewer_id and e.id=@event_id and u.ID=v.ID)
+BEGIN
+select e.id,u.first_name,u.middle_name,u.last_name,e.descriptionEvent,e.locationEvent,
+e.city,e.timeEvent,e.entertainer,e.notification_object_id,e.viewer_id
+FROM EventProject e, Viewer v ,UserProject u
+WHERE v.ID = viewer_id and e.id=@event_id and u.ID=v.ID
+END
+ELSE
+BEGIN
+if @event_id is null
+BEGIN
+SELECT e.id,u.first_name,u.middle_name,u.last_name,e.descriptionEvent,e.locationEvent,
+e.city,e.timeEvent,e.entertainer,e.notification_object_id,e.viewer_id
+FROM EventProject e , Viewer v ,UserProject u
+WHERE v.ID = viewer_id and u.ID=v.ID and e.timeEvent>= current_timestamp
+END
+END
+
+EXEC Show_Event NULL
+SELECT * FROM EventProject
+INSERT INTO EventProject VALUES ('vea','feaf','jio','1/1/2017','feam',18,2)
  /* TESTING Fadi's Procedure */
 
  GO
@@ -481,9 +510,8 @@ print @payment_rate ;
  /* Viewer */
  
  
- CREATE PROC Viewer_Create_Event @city VARCHAR(50), @event_date_time DATETIME, @description VARCHAR(1000), @entertainer VARCHAR(50), @viewer_id INT, @location VARCHAR(1000)
+ CREATE PROC Viewer_Create_Event @city VARCHAR(50), @event_date_time DATETIME, @description VARCHAR(1000), @entertainer VARCHAR(50), @viewer_id INT, @location VARCHAR(1000), @event_id INT OUTPUT
  AS
- DECLARE @event_id INT
  IF @viewer_id IN (SELECT ID FROM Viewer)
  BEGIN
  INSERT INTO Notification_Object DEFAULT VALUES
@@ -493,7 +521,6 @@ print @payment_rate ;
  FROM Notification_Object
  ORDER BY ID DESC
  )
-
  INSERT INTO EventProject (city,timeEvent,descriptionEvent,entertainer,viewer_id,locationEvent,notification_object_id)
  VALUES (@city, @event_date_time,@description,@entertainer,@viewer_id,@location,@notID)
  
@@ -524,16 +551,17 @@ print @payment_rate ;
  FROM EventProject
  ORDER BY ID DESC
  )
- PRINT @event_id
  END
  GO
  
+ /* EXEC Viewer_Create_Event 'cairo', '1/1/2019', 'new years', 'moe', 2, 'cfc' */
  SELECT * FROM EventProject
  SELECT * FROM Announcement
  SELECT * FROM Notification_Object
  /* FIX WHATEVER THIS ERROR IS AND RETURN EVENT_ID AS OUTPUT*/
  DECLARE @event_id INT
- EXEC Viewer_Create_Event 'cairo', '1/1/2019', 'new years event', 'moe', 2, 'cfc'
+ EXEC Viewer_Create_Event 'cairo', '1/1/2019', 'new years event', 'moe', 2, 'cfc', @event_id OUTPUT
+ PRINT @event_id
 
  GO
  CREATE PROCEDURE Viewer_Upload_Event_Photo @event_id INT, @link VARCHAR(100)
@@ -567,7 +595,7 @@ print @payment_rate ;
  INSERT INTO Advertisement VALUES(@desc,@loc,@event_id,@viewer_id)
  GO
  
- EXEC Viewer_Create_Ad_From_Event 11
+ EXEC Viewer_Create_Ad_From_Event 1
  SELECT * FROM EventProject
  SELECT * FROM Advertisement
  
@@ -886,9 +914,6 @@ EXEC Assign_New_Request 2, 5
 @typename VARCHAR(50),
 @id INT
 AS
-UPDATE Content_manager 
-SET typeConManager = @typename 
-WHERE @id = ID;
 IF NOT EXISTS(
     SELECT typeContent_type 
     FROM Content_type
@@ -898,8 +923,18 @@ BEGIN
 INSERT INTO Content_type(typeContent_type)
 values(@typename);
 END
+UPDATE Content_manager 
+SET typeConManager = @typename 
+WHERE @id = ID;
 GO
 
+
+EXEC Check_Type 'balabizo', 11
+EXEC Check_Type 'type 3', 12
+SELECT * FROM Content_manager CM INNER JOIN UserProject UP ON CM.ID=UP.ID
+
+
+GO
 create procedure Deactivate_Profile @user_id INT
 AS
 UPDATE UserProject
@@ -1225,21 +1260,23 @@ END
 else
 BEGIN
 if @usertype = 'Content Manager'
-insert into Content_manager (ID)
-values(@user_id);
 insert into Notified_Person default VALUES;
 declare @n_id2 int;
 set @n_id2 = (select top 1 ID from Notified_Person order by ID desc);
 insert into Staff (ID,hire_date,working_hours,payment_rate,notified_id)
 values(@user_id,@hire_date,@working_hours,@payment_rate,@n_id2)
+insert into Content_manager (ID)
+values(@user_id);
 END
 END
 END
 
 /* TESTING REGISTER */
+SELECT * FROM UserProject
 DECLARE @out INT;
-EXEC Register_User 'Viewer' , 'a@gmail.com','1234','Fadi','Essam','Saad','1997/3/27','w122','education','balabizo',null,null,null,null,null,null,@out;
+EXEC Register_User 'Authorized Reviewer' , 'abfeafeafeacbc@gmail.com','1234','Fadi','Essam','Saad','1997/3/27','w122','education','balabizo',null,null,null,null,null,null,@out;
 print @out;
+SELECT * FROM Reviewer R INNER JOIN UserProject UP ON UP.ID=R.ID
 GO
 select * FROM Viewer
 GO
@@ -1250,7 +1287,9 @@ GO
 select * FROM UserProject
 GO
 declare @out3 int;
-EXEC Register_User 'Content Manager' , 'abc@gmail.com','1234','Fadi','Essam','Saad','1997/3/27',null,null,null,null,null,9,'2000-12-12',8,10.2,@out3;
+EXEC Register_User 'Content Manager' , 'abfeaaeefafaeafeaeffaec@gmail.com','1234','Fadi','Essam','Saad','1997/3/27',null,null,null,null,null,9,'2000-12-12',8,10.2,@out3;
+SELECT * FROM Content_manager CM INNER JOIN UserProject UP ON CM.ID=UP.ID
+SELECT * FROM Reviewer R INNER JOIN UserProject UP ON R.ID=UP.ID
 /* TESTING REGISTER */
 
 
