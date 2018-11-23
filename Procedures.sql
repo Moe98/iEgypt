@@ -930,8 +930,10 @@ GO
 CREATE PROCEDURE Staff_Create_Type @type_name VARCHAR(50)
 AS
 IF @type_name NOT IN (SELECT type FROM Content_type)
+BEGIN
 INSERT INTO Content_type (​type​) 
 VALUES(@type_name)
+END
 
 /* 6- Show original content id and the number of request for each content */
 GO
