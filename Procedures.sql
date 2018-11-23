@@ -8,7 +8,7 @@ SELECT *
 FROM Original_Content
 INNER JOIN Content
 ON Original_Content.ID=Content.ID AND Original_Content.review_status=1 AND Original_Content.filter_status=1
-WHERE Content.typeContent=@typename OR Content.subcategory_name=@categoryname
+WHERE Content.type=@typename OR Content.subcategory_name=@categoryname
 /* 2. Search for any contributor by his/her name */
 GO
  CREATE PROCEDURE Contributor_Search @fullname VARCHAR(100)
@@ -39,9 +39,9 @@ CREATE PROCEDURE Register_User
 @payment_rate DECIMAL(10,2),
 @user_id INT OUTPUT
 AS
-insert into [User] (email,passwordUser,first_name,middle_name,last_name,birth_date)
+insert into UserProject (email,passwordUser,first_name,middle_name,last_name,birth_date)
 values(@email,@passwordUser,@first_name,@middle_name,@last_name,@birth_date)
-set @user_id=(select top 1 ID from [User] order by ID desc)
+set @user_id=(select top 1 ID from UserProject order by ID desc)
 if @usertype = 'Viewer'
 insert into Viewer(ID,working_place,working_place_type,working_place_description)
 values
@@ -61,16 +61,13 @@ else
 BEGIN
 if @usertype = 'Authorized Reviewer'
 BEGIN
-insert into Reviewer(ID)
-values
-(@user_id);
 insert into Notified_Person default VALUES;
 declare @n_id1 int;
 set @n_id1 = (select top 1 ID from Notified_Person order by ID desc);
 insert into Staff (ID,hire_date,working_hours,payment_rate,notified_id)
 values(@user_id,@hire_date,@working_hours,@payment_rate,@n_id1);
-/*insert into Reviewer(ID)
-Values (@user_id);*/
+insert into Reviewer(ID)
+Values (@user_id);
 END
 else
 BEGIN
@@ -92,16 +89,16 @@ GO
 @id INT
 AS
 IF NOT EXISTS(
-    SELECT typeContent_type 
+    SELECT type 
     FROM Content_type
-    WHERE typeContent_type = @typename 
+    WHERE type = @typename 
 )
 BEGIN
-INSERT INTO Content_type(typeContent_type)
+INSERT INTO Content_type(type)
 values(@typename);
 END
 UPDATE Content_manager 
-SET typeConManager = @typename 
+SET type = @typename 
 WHERE @id = ID;
 GO
 
@@ -271,13 +268,13 @@ GO
 /*5.Shows the event with the specific id @event_id or all coming events if  @event_id=null*/
 create PROCEDURE Show_Event @event_id INT
 AS
-if exists(select e.id,u.first_name,u.middle_name,u.last_name,e.descriptionEvent,e.locationEvent,
-e.city,e.timeEvent,e.entertainer,e.notification_object_id,e.viewer_id
+if exists(select e.id,u.first_name,u.middle_name,u.last_name,e.description,e.location,
+e.city,e.time,e.entertainer,e.notification_object_id,e.viewer_id
 FROM [Event] e, Viewer v , [User] u
 WHERE v.ID = viewer_id and e.id=@event_id and u.ID=v.ID)
 BEGIN
-select e.id,u.first_name,u.middle_name,u.last_name,e.descriptionEvent,e.locationEvent,
-e.city,e.timeEvent,e.entertainer,e.notification_object_id,e.viewer_id
+select e.id,u.first_name,u.middle_name,u.last_name,e.description,e.location,
+e.city,e.time,e.entertainer,e.notification_object_id,e.viewer_id
 FROM [Event] e, Viewer v ,[User] u
 WHERE v.ID = viewer_id and e.id=@event_id and u.ID=v.ID
 END
@@ -285,10 +282,10 @@ ELSE
 BEGIN
 if @event_id is null
 BEGIN
-SELECT e.id,u.first_name,u.middle_name,u.last_name,e.descriptionEvent,e.locationEvent,
-e.city,e.timeEvent,e.entertainer,e.notification_object_id,e.viewer_id
+SELECT e.id,u.first_name,u.middle_name,u.last_name,e.description,e.location,
+e.city,e.time,e.entertainer,e.notification_object_id,e.viewer_id
 FROM [Event] e , Viewer v ,[User] u
-WHERE v.ID = viewer_id and u.ID=v.ID and e.timeEvent>= current_timestamp
+WHERE v.ID = viewer_id and u.ID=v.ID and e.time>= current_timestamp
 END
 END
 /*6.shows this specific user's notifications*/
@@ -323,14 +320,14 @@ if @viewer_id in(select ID from Viewer)
 BEGIN
 if @content_id is not NULL
 BEGIN
-SELECT ct.link, ct.uploaded_at, ct.contributor_id, ct.category_type, ct.subcategory_name , ct.typeContent , u.first_name,u.middle_name,u.last_name,u.ID
+SELECT ct.link, ct.uploaded_at, ct.contributor_id, ct.category_type, ct.subcategory_name , ct.type , u.first_name,u.middle_name,u.last_name,u.ID
 from New_Request r , New_Content n , Contributor c ,content ct , [User] u
 WHERE n.ID = @content_id and n.new_request_id =r.id  and r.viewer_id=@viewer_id
    and ct.contributor_id = c.ID and u.ID = c.ID and ct.ID = n.ID;
 END
 ELSE
 BEGIN
-select ct.link, ct.uploaded_at, ct.contributor_id, ct.category_type, ct.subcategory_name , ct.typeContent , u.first_name,u.middle_name,u.last_name,u.ID
+select ct.link, ct.uploaded_at, ct.contributor_id, ct.category_type, ct.subcategory_name , ct.type , u.first_name,u.middle_name,u.last_name,u.ID
 from New_Request r ,New_Content n , Contributor c ,content ct , [User] u
 WHERE n.new_request_id =r.id and r.viewer_id=@viewer_id
    and ct.contributor_id = c.ID and u.ID = c.ID and ct.ID = n.ID;
@@ -352,7 +349,7 @@ CREATE PROC Viewer_Create_Event @city VARCHAR(50), @event_date_time DATETIME, @d
  FROM Notification_Object
  ORDER BY ID DESC
  )
- INSERT INTO [Event] (city,timeEvent,descriptionEvent,entertainer,viewer_id,locationEvent,notification_object_id)
+ INSERT INTO [Event] (city,time,description,entertainer,viewer_id,location,notification_object_id)
  VALUES (@city, @event_date_time,@description,@entertainer,@viewer_id,@location,@notID)
  
  DECLARE @i INT
@@ -402,8 +399,8 @@ CREATE PROC Viewer_Create_Event @city VARCHAR(50), @event_date_time DATETIME, @d
  DECLARE @desc VARCHAR(1000)
  DECLARE @loc VARCHAR(100)
  DECLARE @viewer_id INT
- SET @desc=(SELECT descriptionEvent FROM [Event] WHERE id=@event_id)
- SET @loc=(SELECT locationEvent FROM [Event] WHERE id=@event_id)
+ SET @desc=(SELECT description FROM [Event] WHERE id=@event_id)
+ SET @loc=(SELECT location FROM [Event] WHERE id=@event_id)
  SET @viewer_id=(SELECT viewer_id FROM [Event] WHERE id=@event_id)
  INSERT INTO Advertisement VALUES(@desc,@loc,@event_id,@viewer_id)
  /* 4. Apply for an existing request to buy a specified original content(s). ONLY allowed original content to be bought has a rating of 4 or 5 stars*/
@@ -503,8 +500,8 @@ GO
  IF @original_content_id IN (SELECT ID FROM Original_Content)
  BEGIN
  UPDATE Comment
- SET textComment=@comment_text, dateComment=@updated_written_time
- WHERE Viewer_id=@viewer_id AND original_content_id=@original_content_id  AND dateComment=@last_written_time
+ SET text=@comment_text, date=@updated_written_time
+ WHERE Viewer_id=@viewer_id AND original_content_id=@original_content_id  AND date=@last_written_time
  END
  END
 /* 10. Delete my comment*/ 
@@ -516,7 +513,7 @@ GO
  IF @original_content_id IN (SELECT ID FROM Original_Content)
  BEGIN
  DELETE Comment
- WHERE Viewer_id=@viewer_id AND original_content_id=@original_content_id AND dateComment=@written_time
+ WHERE Viewer_id=@viewer_id AND original_content_id=@original_content_id AND date=@written_time
  END
  END
 /* 11. Create an advertisement by providing all the needed information for publicity*/ 
@@ -533,10 +530,10 @@ GO
  FROM Notification_Object
  ORDER BY ID DESC
  )
- INSERT INTO [Event](descriptionEvent,locationEvent,notification_object_id,viewer_id)
+ INSERT INTO [Event](description,location,notification_object_id,viewer_id)
  VALUES(@description,@location,@notID,@viewer_id)
  SET @event_id=(SELECT TOP 1 id FROM [Event] ORDER BY id DESC)
-INSERT INTO Advertisement (viewer_id,descriptionAd,locationAd,event_id)
+INSERT INTO Advertisement (viewer_id,description,location,event_id)
 VALUES (@viewer_id,@description,@location,@event_id)
 
 DECLARE @i INT
@@ -567,7 +564,7 @@ AS
 IF @viewer_id IN (SELECT ID FROM Viewer)
 BEGIN
 UPDATE Advertisement
-SET descriptionAd=@description, locationAd=@location
+SET description=@description, location=@location
 WHERE id=@ad_id AND viewer_id=@viewer_id /*CHECK WHETHER WE CAN ADD AD ID OR NOT*/
 END
 /* 13. Delete my advertisement */
@@ -592,7 +589,7 @@ CREATE PROCEDURE Send_Message @msg_text VARCHAR(8000), @viewer_id INT, @contribu
 AS
 IF @viewer_id IN (SELECT ID FROM Viewer) AND @contributor_id IN (SELECT ID FROM Contributor)
 BEGIN
-INSERT INTO [Message] (textProject,viewer_id,contributor_id,sender_type,sent_at,read_status)
+INSERT INTO [Message] (text,viewer_id,contributor_id,sender_type,sent_at,read_status)
 VALUES (@msg_text,@viewer_id,@contributor_id,@sender_type,@sent_at,0)
 END
 /* 15. Show all messages to/from a contributor*/
@@ -740,7 +737,7 @@ FROM Content
 )
 SET @cid=@cid+1
 SET IDENTITY_INSERT Content ON
-INSERT INTO Content(id,link,uploaded_at,contributor_id,category_type,subcategory_name,typeContent)
+INSERT INTO Content(id,link,uploaded_at,contributor_id,category_type,subcategory_name,type)
 VALUES(@cid,@link,CURRENT_TIMESTAMP,@contributor_id,@category_id,@subcategory_name,@type_id)
 SET IDENTITY_INSERT Content OFF
 INSERT INTO Original_Content (ID)
@@ -878,42 +875,49 @@ SET @numberOfReq=(
 GO				 
 CREATE PROCEDURE reviewer_filter_content @reviewer_id INT, @original_content INT, @status BIT
 AS
+IF @reviewer_id IN (SELECT ID FROM Reviewer)
+BEGIN
 UPDATE Original_Content
-SET review_status = @status
-WHERE ID = @original_content and reviewer_id = @reviewer_id
-
+SET review_status = @status, reviewer_id=@reviewer_id
+WHERE ID = @original_content
+END
 
 /* 2- Content manager filter original content */
 GO
 CREATE PROCEDURE content_manager_filter_content @content_manager_id INT, @original_content INT, @status BIT
 AS
+IF @content_manager_id in (SELECT ID FROM Content_manager)
+BEGIN
 DECLARE @typeContMan VARCHAR(100)
-SET @typeContMan=(SELECT typeConManager FROM Content_manager WHERE ID=@content_manager_id)
+SET @typeContMan=(SELECT type FROM Content_manager WHERE ID=@content_manager_id)
 DECLARE @contentType VARCHAR(100)
-SET @contentType=(SELECT typeContent FROM Content WHERE ID=@original_content)
+SET @contentType=(SELECT type FROM Content WHERE ID=@original_content)
 UPDATE Original_Content
-SET filter_status = @status
-WHERE ID = @original_content and content_manager_id = @content_manager_id  and @typeContMan=@contentType
-
+SET filter_status = @status,content_manager_id = @content_manager_id
+WHERE ID = @original_content and @typeContMan=@contentType
+END
 /* 3- Create a category */
 GO
 CREATE PROCEDURE Staﬀ_Create_Category @category_name VARCHAR(50)
 AS
-INSERT INTO Category(typeCategory)
+IF @category_name NOT IN (SELECT category_type FROM Category)
+BEGIN
+INSERT INTO Category(category_type)
 VALUES(@category_name)
+END
 
 /* 4- Create a subcategory */
 GO
 CREATE PROCEDURE Staﬀ_Create_Subcategory @category_name VARCHAR(50), @subcategory_name VARCHAR(50)
 AS
-INSERT INTO Sub_Category(category_type,nameSubCategory)
+INSERT INTO Sub_Category(category_type,name)
 VALUES (@category_name,@subcategory_name)
 
 /* 5- Create a new type */
 GO
 CREATE PROCEDURE Staff_Create_Type @type_name VARCHAR(50)
 AS
-INSERT INTO Content_type (​typeContent_type​) 
+INSERT INTO Content_type (​type​) 
 VALUES(@type_name)
 
 /* 6- Show original content id and the number of request for each content */
