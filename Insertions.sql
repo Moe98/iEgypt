@@ -1,3 +1,4 @@
+USE iEgypt_19
 /* INSERTIONS */
 /*CATEGORY PART*/
 INSERT INTO Category VALUES
@@ -155,3 +156,12 @@ VALUES
 
 
 
+
+select * from Content c, Original_Content o where c.ID = o.ID
+update Original_Content
+set review_status=1
+where ID =1;
+update Original_Content
+set filter_status=1
+where ID =1;
+exec Original_Content_Search 'type 1' , null
