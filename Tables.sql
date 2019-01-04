@@ -1,4 +1,5 @@
 CREATE DATABASE iEgypt_19
+USE iEgypt_19
 CREATE TABLE [User](
 ID INT PRIMARY KEY IDENTITY,
 email VARCHAR(50),
@@ -12,6 +13,25 @@ age AS (YEAR(CURRENT_TIMESTAMP)-YEAR(birth_date)),
 passwordUser VARCHAR(50),
 UNIQUE (email)
 )
+--PRINT @@SERVERNAME
+--select * from [User];
+SELECT * 
+FROM New_Content NC
+INNER JOIN New_Request NR
+ON NC.new_request_id=NR.id
+INNER JOIN Contributor C
+ON NR.contributor_id=C.ID
+INNER JOIN [User] U
+ON C.ID=U.ID
+WHERE NR.accept_status=1
+SELECT * FROM Comment
+SELECT * FROM [User]
+SELECT * FROM Event
+SELECT * FROM New_Request WHERE viewer_id=1
+SELECT * FROM Advertisement WHERE viewer_id=1
+select * from Event
+SELECT * FROM Event_Photos_Link
+SELECT * FROM Event_Videos_Link
 
 CREATE TABLE Viewer(
 ID INT,
