@@ -6,19 +6,19 @@ EXEC Original_Content_Search 'pictures','sub11'
 EXEC Contributor_Search 'd m contributor1'
 /*3.Allows a future user to create an account on the database while checking his/her type */
 DECLARE @out INT;
-EXEC Register_User 'Viewer' , 'a@gmail.com','1234','Fadi','Essam','Saad','1997/3/27','w122','education','balabizo',null,null,null,null,null,null,@out;
+EXEC Register_User 'Viewer' , 'a@gmail.com','1234','Moe','Adel','Abu Atala','1998/12/15','w122','education','balabizo',null,null,null,null,null,null,@out;
 print @out;
 GO
 select * FROM Viewer
 GO
 DECLARE @out1 INT;
-EXEC Register_User 'Contributor' , 'a@gmail.com','1234','Fadi','Essam','Saad','1997/3/27',null,null,null,'art','link123',9,'2000-12-12',8,10.2,@out1;
+EXEC Register_User 'Contributor' , 'a@gmail.com','1234','Moe','Adel','Abu Atala','1998/12/15',null,null,null,'art','link123',9,'2000-12-12',8,10.2,@out1;
 print @out1;
 GO
 select * FROM [User]
 GO
 declare @out3 int;
-EXEC Register_User 'Content Manager' , 'b@gmail.com','1234','Fadi','Essam','Saad','1997/3/27',null,null,null,null,null,9,'2000-12-12',8,10.2,@out3;
+EXEC Register_User 'Content Manager' , 'b@gmail.com','1234','Moe','Adel','Abu Atala','1998/12/15',null,null,null,null,null,9,'2000-12-12',8,10.2,@out3;
 go
 /*4 Allows Content Manager to enter the type of content he's assigned to*/
 EXEC Check_Type 'art' , 5
@@ -284,17 +284,3 @@ EXECUTE Show_Possible_Contributors
 
 
 /* STAFF MEMBER */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
