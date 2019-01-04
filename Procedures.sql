@@ -1,4 +1,4 @@
-USE iEgypt
+USE iEgypt_19
 /* USER */
 /* "As a registered/unregistered user, I should be able to ..." */
 /* 1. Search for original content by its type OR its category */
@@ -24,7 +24,7 @@ GO
 CREATE PROCEDURE Register_User
 @usertype VARCHAR(50),
 @email VARCHAR(50),
-@passwordUser VARCHAR(50),
+@password VARCHAR(50),
 @first_name VARCHAR(50),
 @middle_name VARCHAR(50),
 @last_name VARCHAR(50),
@@ -40,9 +40,9 @@ CREATE PROCEDURE Register_User
 @payment_rate DECIMAL(10,2),
 @user_id INT OUTPUT
 AS
-insert into UserProject (email,passwordUser,first_name,middle_name,last_name,birth_date)
-values(@email,@passwordUser,@first_name,@middle_name,@last_name,@birth_date)
-set @user_id=(select top 1 ID from UserProject order by ID desc)
+insert into [User] (email,passwordUser,first_name,middle_name,last_name,birth_date)
+values(@email,@password,@first_name,@middle_name,@last_name,@birth_date)
+set @user_id=(select top 1 ID from [User] order by ID desc)
 if @usertype = 'Viewer'
 insert into Viewer(ID,working_place,working_place_type,working_place_description)
 values
@@ -135,23 +135,36 @@ create procedure User_login
 AS
 DECLARE @type varchar(50);
 IF exists(select ID from [User] where @email=email and @password=passwordUser)
-   BEGIN
-   if exists (select * from [User] where deactivationStatus =1 and @email=email and @password=passwordUser)
-   BEGIN
-   select @user_id = ID
-   FROM [User]
-   WHERE email=@email AND passwordUser=@password;
-   END
-   ELSE
-   BEGIN
-   IF exists (select * from [User] where DATEDIFF(DAY,deactivationDate,GETDATE())>14 and @email=email and @password=passwordUser)
-   BEGIN
-   set @user_id = -1;
-   END
-   END
-   END
+  BEGIN
+  if exists (select * from [User] where deactivationStatus =1 and @email=email and @password=passwordUser)
+  BEGIN
+  select @user_id = ID
+  FROM [User]
+  WHERE email=@email AND passwordUser=@password;
+  END
+  ELSE
+  BEGIN
+  IF exists (select * from [User] where DATEDIFF(DAY,deactivationDate,GETDATE())>14 and @email=email and @password=passwordUser)
+  BEGIN
+  set @user_id = -1;
+  END
+  else
+  BEGIN
+  IF exists (select * from [User] where DATEDIFF(DAY,deactivationDate,GETDATE())<=14 and @email=email and @password=passwordUser)
+  BEGIN
+  select @user_id = ID
+  FROM [User]
+  WHERE email=@email AND passwordUser=@password;
+  UPDATE [USER]
+  set deactivationStatus=1 where @user_id=ID;
+  UPDATE [USER]
+  set deactivationDate=null where @user_id=ID;
+  END
+  END
+  END
+  END
 ELSE
-   BEGIN SET @user_id =-1 ; END
+  BEGIN SET @user_id =-1 ; END
 if @user_id <> -1
 BEGIN
 if exists(select * from Viewer where @user_id = ID)
@@ -463,7 +476,7 @@ VALUES(0,@information,@viewer_id,@notifId2)
  AS
  DECLARE @status BIT;
  SELECT @status=accept_status FROM New_Request WHERE id=@request_id
- IF(@status IS NULL or @status=1)
+ IF(@status IS NULL or @status=0)
  BEGIN
  DELETE FROM New_Request WHERE id=@request_id
  END
@@ -566,7 +579,7 @@ IF @viewer_id IN (SELECT ID FROM Viewer)
 BEGIN
 UPDATE Advertisement
 SET description=@description, location=@location
-WHERE id=@ad_id AND viewer_id=@viewer_id /*CHECK WHETHER WE CAN ADD AD ID OR NOT*/
+WHERE id=@ad_id /*CHECK WHETHER WE CAN ADD AD ID OR NOT*/
 END
 /* 13. Delete my advertisement */
 GO
@@ -746,7 +759,7 @@ VALUES (@cid)
 END
 /*4.Upload_New_Content The contributor can upload new content*/
 GO
-CREATE PROCEDURE Upload_New_Content @new_request_id INT, @contributor_id INT , @subcategory_name VARCHAR(50), @category_id VARCHAR(50),@link VARCHAR(50)
+CREATE PROCEDURE Upload_New_Content @new_request_id INT, @contributor_id INT , @subcategory_name VARCHAR(50), @category_id VARCHAR(50),@link VARCHAR(50),@type VARCHAR(50)
 AS
 IF @contributor_id in(SELECT ID FROM Contributor)
 BEGIN
@@ -757,8 +770,8 @@ FROM Content
 )
 SET @cid=@cid+1
 SET IDENTITY_INSERT Content ON
-INSERT INTO Content(id,link,uploaded_at,contributor_id,category_type,subcategory_name) 
-VALUES(@cid,@link,CURRENT_TIMESTAMP,@contributor_id,@category_id,@subcategory_name)
+INSERT INTO Content(id,link,uploaded_at,contributor_id,category_type,subcategory_name,type) 
+VALUES(@cid,@link,CURRENT_TIMESTAMP,@contributor_id,@category_id,@subcategory_name,@type)
 SET IDENTITY_INSERT Content OFF
 INSERT INTO New_Content(ID,new_request_id)
 VALUES(@cid,@new_request_id)
@@ -878,6 +891,172 @@ SET @numberOfReq=(
 
 /* STAFF MEMBER */
 /* 1- Authorized Reviewer filter Original Content */
+
+/* 2- Content manager filter original content */
+
+/* 3- Create a category */
+
+/* 4- Create a subcategory */
+
+/* 5- Create a new type */
+
+/* 6- Show original content id and the number of request for each content */
+
+/* 7- Show number of requests related to content of each category ordered by each working place type */
+
+/* 8-  Delete a comment on the website */
+
+/* IT IS ALREADY IMPLEMENTED ABOVE WITH THE SAME NAME IN VIEWER: #10 */
+
+/*9. Delete_Original_Content*/
+
+/*10 Delete_New_Content*/
+
+/*11. Assign_Contributor_Request*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* 12- Show a list of contributors to be able to assign one of them to a request*/
+
+
+
+/* STAFF MEMBER */ 
+
+
+
+
+
+
+/* HELPERS */
+GO
+CREATE PROCEDURE searchMail 
+@email varchar(50),
+@out BIT OUTPUT
+AS
+if exists(select email from [User] where @email=email)
+BEGIN
+set @out = 1;
+END
+ELSE
+BEGIN
+set @out = 0;
+END
+GO
+
+ create PROCEDURE getContributorID
+@name varchar(50),
+@id int out
+AS
+select @id=u.ID
+from [User] u INNER JOIN Contributor c on c.ID=u.ID
+where u.first_name+' '+u.middle_name+' '+u.last_name = @name
+
+GO
+
+create procedure existCont
+@name varchar(50),
+@out bit OUT
+AS
+If exists(
+select *
+from Contributor c,[User] u
+WHERE c.ID=u.ID and u.first_name+' '+u.middle_name+' '+u.last_name = @name)
+Begin
+Set @out = 1;
+end
+Else
+Begin
+set @out=0;
+end
+
+Go
+
+
+create procedure getTypeofUser
+@id int,
+@type varchar(50) OUT
+AS
+if exists(select * from Viewer where ID=@id)
+BEGIN
+SET @type = 'Viewer';
+END
+ELSE
+BEGIN
+if exists(select * from Contributor where ID=@id)
+BEGIN
+SET @type = 'Contributor';
+END
+ELSE
+BEGIN
+if exists(select * from Reviewer where ID=@id)
+BEGIN
+SET @type = 'Authorized Reviewer';
+END
+ELSE
+BEGIN
+if exists(select * from Content_manager where ID=@id)
+BEGIN
+SET @type = 'Content Manager';
+END
+END
+END
+END
+go
+
+CREATE PROCEDURE Show_Original_Content2 @name varchar(50)
+AS
+IF @name IS NOT NULL
+SELECT *
+FROM Original_Content OC
+INNER JOIN Content C
+ON C.ID=OC.ID
+Inner JOIN Contributor cont
+ON cont.ID=c.contributor_id
+inner JOIN [User] u
+ON u.ID=cont.ID
+WHERE u.first_name+' '+u.middle_name+' '+u.last_name =@name
+ELSE
+SELECT *
+FROM Original_Content OC
+INNER JOIN Content C
+ON C.ID=OC.ID
+inner JOIN Contributor cont
+ON cont.ID=c.contributor_id
+inner JOIN [User] u
+ON u.ID=cont.ID
+GO
+
+CREATE PROCEDURE updateSeen @ID INT
+AS
+UPDATE Announcement
+SET seen_at = CURRENT_TIMESTAMP
+WHERE notified_person_id = @ID AND seen_at is NULL
+
+
+/* STAFF MEMBER NEW */ 
+/* 1- Authorized Reviewer filter Original Content */
 GO				 
 CREATE PROCEDURE reviewer_filter_content @reviewer_id INT, @original_content INT, @status BIT
 AS
@@ -918,22 +1097,23 @@ CREATE PROCEDURE Staﬀ_Create_Subcategory @category_name VARCHAR(50), @subcateg
 AS
 IF @category_name IN (SELECT category_type FROM Category)
 BEGIN
-IF @subcategory_name NOT IN (SELECT name FROM Categeory WHERE category_type = @category_name)
+IF @subcategory_name NOT IN (SELECT category_type FROM Category WHERE category_type = @category_name)
 BEGIN
 INSERT INTO Sub_Category(category_type,name)
 VALUES (@category_name,@subcategory_name)
 END
 END
 
+
 /* 5- Create a new type */
 GO
 CREATE PROCEDURE Staff_Create_Type @type_name VARCHAR(50)
 AS
 IF @type_name NOT IN (SELECT type FROM Content_type)
-BEGIN
 INSERT INTO Content_type (​type​) 
 VALUES(@type_name)
-END
+
+
 
 /* 6- Show original content id and the number of request for each content */
 GO
@@ -983,10 +1163,10 @@ GO
 
 /*10 Delete_New_Content*/
 GO
- CREATE PROCEDURE Delete_New_Content @content_id INT
+CREATE PROCEDURE Delete_New_Content @content_id INT
  AS
  DECLARE @reqID INT 
- set @reqID=(Select new_request_id From New_Content)
+ set @reqID=(Select new_request_id From New_Content where @content_id=ID)
  DELETE 
  FROM New_Content
  where ID=@content_id
@@ -1059,19 +1239,207 @@ DECLARE @requests INT
 SET @requests = (SELECT COUNT(*) FROM New_Request WHERE New_Request.contributor_id=@contributor_id)
 RETURN @requests
 END
+GO
+CREATE FUNCTION numberOfHandledRequests (@contributor_id INT)
+RETURNS INT
+AS
+BEGIN
+DECLARE @HandledRequests INT
+SET @HandledRequests = (SELECT COUNT(con.ID) FROM Content con INNER JOIN New_Content newcon ON con.ID=newcon.ID WHERE @contributor_id=con.contributor_id)
+RETURN @HandledRequests
+END
+
 
 GO 
 CREATE PROCEDURE Show_Possible_Contributors
 AS
-SELECT c.contributor_id , COUNT(c.contributor_id) AS 'Number of requests'
-FROM Contributor INNER JOIN New_Request nr ON Contributor.ID = nr.contributor_id
-INNER JOIN New_Content nc ON nr.id = nc.new_request_id
-INNER JOIN Content c ON nc.ID = c.ID
-GROUP BY c.contributor_id
-HAVING (dbo.numberOfRequests(c.contributor_id))-COUNT(c.contributor_id)<3
-ORDER BY dbo.AvgRespondRate(c.contributor_id) ASC, COUNT(c.contributor_id) DESC
+SELECT c.ID, dbo.numberOfHandledRequests(c.ID) AS 'Number of handled requests'
+FROM Contributor c LEFT OUTER JOIN Content co ON c.ID = co.contributor_id
+GROUP BY c.ID
+Having (dbo.numberOfRequests(c.ID) - dbo.numberOfHandledRequests(c.ID))<3
+ORDER BY dbo.AvgRespondRate(c.ID) ASC, dbo.numberOfHandledRequests(c.ID) DESC
 
-/* STAFF MEMBER */ 
+/* STAFF MEMBER NEW */
+GO
+CREATE PROCEDURE getNotifiedID @ID INT , @notifID INT OUTPUT
+AS
+SELECT @notifID = notified_id FROM Staff WHERE ID = @ID;
+GO
 
+GO
+CREATE PROCEDURE Respond_New_Request  @contributor_id INT , @accept_status BIT , @request_id INT
+AS
+IF @contributor_id in(SELECT id from Contributor)
+BEGIN
+DECLARE @accepted BIT,@specified BIT
+SET @accepted = (
+SELECT New_Request.accept_status
+FROM New_Request
+where New_Request.id=@request_id
+)
+SET @specified = (
+SELECT New_Request.specified
+FROM New_Request
+where id=@request_id
+)
+IF @accepted is null and @specified=0 and @accept_status=1
+BEGIN
+UPDATE New_Request
+SET accept_status=@accept_status , contributor_id=@contributor_id , accepted_at=CURRENT_TIMESTAMP
+where New_Request.id=@request_id 
+END
+IF @accepted is null and @specified=1
+BEGIN
+DECLARE @ContID INT
+SET @ContID =(
+SELECT contributor_id
+FROM New_Request
+where id=@request_id)
+IF @contID=@contributor_id
+BEGIN
+IF @accept_status=1
+BEGIN
+UPDATE New_Request
+SET accept_status=@accept_status , accepted_at=CURRENT_TIMESTAMP
+where id=@request_id
+END
+ELSE 
+UPDATE New_Request
+SET accept_status=@accept_status 
+where id=@request_id
+END
+END
+END
 
+GO
+CREATE PROCEDURE Show_New_Requests @request_id INT, @contributor_id INT
+AS
+IF @contributor_id in(SELECT id from Contributor)
+BEGIN
+IF @request_id IS NOT NULL
+BEGIN
+SELECT NR.id,NR.specified,NR.information,U.first_name as f1, U.middle_name as m1, U.last_name as l1,U1.first_name as f2,U1.middle_name as m2,U1.last_name as l2
+FROM New_Request NR
+inner join [User] U 
+on U.id=NR.viewer_id
+left outer join [User] U1 
+on U1.id=NR.contributor_id
+WHERE @request_id=NR.id and NR.accept_status IS NULL 
+END
+ELSE
+BEGIN
+SELECT NR.id,NR.specified,NR.information,U.first_name as f1, U.middle_name as m1, U.last_name as l1,U1.first_name as f2,U1.middle_name as m2,U1.last_name as l2
+FROM New_Request NR 
+inner join [User] U 
+on U.id=NR.viewer_id
+left outer join [User] U1 
+on U1.id=NR.contributor_id
+WHERE (NR.contributor_id=@contributor_id OR NR.specified=0) AND NR.accept_status is NULL
+END
+END
 
+GO
+CREATE procedure Show_NotificationContributor @user_id INT
+AS
+if exists(select u.ID from [User] u,Staff s where u.ID=s.ID and u.ID = @user_id )
+   or exists(select u.ID from [User] u,Contributor c where u.ID=c.ID and u.ID = @user_id)
+BEGIN
+   DECLARE @npid int;
+   if exists(select u.ID from [User] u,Staff s where u.ID=s.ID and u.ID = @user_id )
+   BEGIN
+       select @npid = n.ID
+       FROM staff s,Notified_Person n
+       WHERE s.notified_id=n.ID and s.ID=@user_id;
+   END
+   ELSE
+   BEGIN
+       select @npid = n.ID
+       FROM Contributor c,Notified_Person n
+       WHERE c.notified_id=n.ID and c.ID=@user_id;
+	 SELECT a.seen_at,a.sent_at, E.description,E.location,E.city,E.time,E.entertainer,U1.first_name as f1,U1.middle_name as m1,U1.last_name as l1,NR.accept_status,NR.specified,NR.information,NR.Accepted_at,U2.first_name as f2,U2.middle_name as m2,U2.last_name as l2
+   FROM Announcement a
+   left outer join Event E
+   on E.notification_object_id=a.notification_object_id
+   left outer join New_Request NR
+   on NR.notif_obj_id=a.notification_object_id
+   left outer join [User] U1
+   on U1.ID=E.viewer_id
+   left outer join [User] U2
+   on U2.ID=NR.viewer_id
+   WHERE a.notified_person_id=@npid
+   END
+   
+   END
+GO
+
+CREATE PROCEDURE Show_New_Requests  @contributor_id INT
+AS
+IF @contributor_id in(SELECT id from Contributor)
+BEGIN
+SELECT NR.id,NR.specified,NR.information,U.first_name as f1, U.middle_name as m1, U.last_name as l1,U1.first_name as f2,U1.middle_name as m2,U1.last_name as l2
+FROM New_Request NR 
+inner join [User] U 
+on U.id=NR.viewer_id
+left outer join [User] U1 
+on U1.id=NR.contributor_id
+WHERE (NR.contributor_id=@contributor_id OR NR.specified=0) AND NR.accept_status is NULL
+END
+
+GO
+CREATE PROCEDURE getTime @time DATETIME OUTPUT
+AS
+BEGIN
+SET @time=CURRENT_TIMESTAMP
+END
+
+GO
+CREATE PROCEDURE getNotifiedIDCont @ID INT , @notifID INT OUTPUT
+AS
+SELECT @notifID = notified_id FROM Contributor WHERE ID = @ID;
+
+GO
+create procedure ShowingContent @contrID INT
+as
+SELECT link,uploaded_at,category_type,subcategory_name,type,ID 
+FROM Content
+where contributor_id = @contrID
+
+DROP PROCEDURE Show_New_Requests
+
+GO
+CREATE PROCEDURE Show_New_Requests  @contributor_id INT
+AS
+IF @contributor_id in(SELECT id from Contributor)
+BEGIN
+SELECT NR.id,NR.specified,NR.information,U.first_name as f1, U.middle_name as m1, U.last_name as l1,U1.first_name as f2,U1.middle_name as m2,U1.last_name as l2
+FROM New_Request NR 
+inner join [User] U 
+on U.id=NR.viewer_id
+left outer join [User] U1 
+on U1.id=NR.contributor_id
+WHERE (NR.contributor_id=@contributor_id OR NR.specified=0) AND NR.accept_status is NULL
+END
+
+GO
+create proc showMessages @id INT	
+as 
+SELECT M.sent_at,U.first_name,U.middle_name,U.last_name,M.read_at,M.text,M.read_Status
+FROM Message M 
+inner join [User] U
+on M.viewer_id=U.ID
+where M.sender_type=0 and M.contributor_id= @id
+
+GO
+create procedure typeOfContent @id INT , @OriginalContent INT OUTPUT
+AS
+IF @id in (Select ID From Original_Content)
+set @OriginalContent=1
+else 
+set @OriginalContent=0
+
+GO
+CREATE PROCEDURE updateMessageSeen @ID INT
+AS
+UPDATE Message
+SET read_at = CURRENT_TIMESTAMP ,read_status=1
+WHERE contributor_id= @ID AND read_at is NULL AND sender_type=0
